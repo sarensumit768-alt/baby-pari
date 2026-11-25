@@ -1,1 +1,148 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ff9acb">
+  <title>Baby Pari AI</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; font-family: Arial, sans-serif;
+      color: #54234e; text-align: center;
+      background: linear-gradient(145deg, #ffe0f0, #d9c8ff);
+    }
+    main { width: min(100% - 28px, 520px); margin: auto; padding: 28px 0 40px; }
+    h1 { margin: 10px 0; font-size: 2rem; }
+    .fairy { font-size: 100px; margin: 18px 0; animation: float 2s ease-in-out infinite alternate; }
+    @keyframes float { to { transform: translateY(-9px); } }
+    .panel {
+      background: rgba(255,255,255,.88); border-radius: 22px;
+      padding: 20px; margin: 18px 0; box-shadow: 0 8px 24px #754b7820;
+    }
+    #status { min-height: 58px; line-height: 1.6; }
+    button {
+      border: 0; border-radius: 999px; padding: 14px 20px; margin: 6px;
+      background: #e83e91; color: white; font-size: 16px; font-weight: 600;
+    }
+    button.secondary { background: #7652bd; }
+    button:disabled { opacity: .55; }
+    input {
+      width: 100%; border: 1px solid #e7c5dc; border-radius: 14px;
+      padding: 14px; font-size: 16px; margin: 8px 0;
+    }
+    .hint { font-size: 13px; line-height: 1.6; color: #765f78; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>🎀 Baby Pari AI 🎀</h1>
+    <div class="fairy" aria-hidden="true">🧚‍♀️</div>
+    <h2>হ্যালো বন্ধু! ❤️</h2>
+    <p>আমি Baby Pari। আমার সঙ্গে বাংলায় কথা বলো।</p>
+
+    <section class="panel">
+      <div id="status" aria-live="polite">মাইক্রোফোনের বোতাম চাপলে আমি তোমার কথা শুনব।</div>
+      <button id="listenBtn" type="button">🎤 কথা বলো</button>
+      <button id="stopBtn" class="secondary" type="button">⏹ থামাও</button>
+    </section>
+
+    <section class="panel">
+      <label for="message">অথবা এখানে লিখে পাঠাও</label>
+      <input id="message" type="text" placeholder="তোমার কথা লেখো..." autocomplete="off">
+      <button id="sendBtn" type="button">পাঠাও 💗</button>
+    </section>
+
+    <p class="hint">
+      নোট: ভয়েস ইনপুটের জন্য সমর্থিত ব্রাউজার ও মাইক্রোফোন অনুমতি লাগবে।
+      এই সংস্করণে নির্দিষ্ট কিছু কথার উত্তর দেওয়া হয়; এটি এখনো অনলাইন ChatGPT-ধরনের AI নয়।
+      Free Fire-এর ওপর ভাসমানভাবে চালাতে আলাদা Android অ্যাপ ও Overlay অনুমতি প্রয়োজন।
+    </p>
+  </main>
+
+  <script>
+    const statusBox = document.getElementById('status');
+    const messageInput = document.getElementById('message');
+    const listenBtn = document.getElementById('listenBtn');
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = null;
+
+    function say(text) {
+      statusBox.textContent = text;
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'bn-IN';
+      utterance.rate = 0.92;
+      utterance.pitch = 1.15;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function makeReply(raw) {
+      const text = raw.toLowerCase();
+      if (text.includes('তোমার নাম') || text.includes('নাম কী') || text.includes('নাম কি')) {
+        return 'আমার নাম Baby Pari। আমি তোমার বাংলা ভয়েস বন্ধু।';
+      }
+      if (text.includes('কেমন আছ')) return 'আমি ভালো আছি বন্ধু। তুমি কেমন আছো?';
+      if (text.includes('হ্যালো') || text.includes('হাই')) return 'হ্যালো বন্ধু! তোমাকে দেখে ভালো লাগছে।';
+      if (text.includes('ভালোবাসি')) return 'তোমার জন্য অনেক ভালোবাসা রইল।';
+      if (text.includes('ফ্রি ফায়ার') || text.includes('ফ্রি ফায়ার') || text.includes('free fire')) {
+        return 'চলো বন্ধু, মন দিয়ে খেলো! তোমার গেমের জন্য শুভকামনা।';
+      }
+      if (text.includes('ধন্যবাদ')) return 'স্বাগতম বন্ধু!';
+      if (text.includes('বিদায়') || text.includes('বিদায়')) return 'আবার কথা হবে বন্ধু। টাটা!';
+      return 'তোমার কথা শুনলাম: ' + raw + '। আমি এখনো শিখছি, আরেকভাবে বলবে?';
+    }
+
+    function answer(text) {
+      const clean = text.trim();
+      if (!clean) {
+        statusBox.textContent = 'আগে কিছু বলো বা লেখো।';
+        return;
+      }
+      say(makeReply(clean));
+    }
+
+    function startListening() {
+      if (!SpeechRecognition) {
+        statusBox.textContent = 'এই ব্রাউজারে ভয়েস শোনা সমর্থিত নয়। Chrome-এ চেষ্টা করো।';
+        return;
+      }
+      if (recognition) {
+        try { recognition.abort(); } catch (_) {}
+      }
+      recognition = new SpeechRecognition();
+      recognition.lang = 'bn-IN';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.onstart = () => { statusBox.textContent = 'শুনছি বন্ধু... এখন কথা বলো। 🎤'; listenBtn.disabled = true; };
+      recognition.onresult = event => {
+        const heard = event.results[0][0].transcript;
+        messageInput.value = heard;
+        answer(heard);
+      };
+      recognition.onerror = event => {
+        statusBox.textContent = event.error === 'not-allowed'
+          ? 'মাইক্রোফোন ব্যবহারের অনুমতি দাও, তারপর আবার চেষ্টা করো।'
+          : 'কথা শুনতে সমস্যা হয়েছে। আবার চেষ্টা করো।';
+      };
+      recognition.onend = () => { listenBtn.disabled = false; };
+      try { recognition.start(); }
+      catch (_) { listenBtn.disabled = false; statusBox.textContent = 'আবার চেষ্টা করো।'; }
+    }
+
+    listenBtn.addEventListener('click', startListening);
+    document.getElementById('stopBtn').addEventListener('click', () => {
+      if (recognition) recognition.stop();
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      listenBtn.disabled = false;
+      statusBox.textContent = 'ঠিক আছে, আপাতত থামলাম।';
+    });
+    document.getElementById('sendBtn').addEventListener('click', () => answer(messageInput.value));
+    messageInput.addEventListener('keydown', event => {
+      if (event.key === 'Enter') answer(messageInput.value);
+    });
+  </script>
+</body>
+</html>
 
